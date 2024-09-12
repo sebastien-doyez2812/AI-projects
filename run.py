@@ -2,8 +2,17 @@ import cv2
 from ultralytics import YOLO
 import time
 import numpy as np
+import serial
+
+arduino = serial.Serial(port='COM5', baudrate= 9600, timeout= 1)
+repere = []
+
+def sendDate(data):
+    arduino.write(bytes(f"{data}\n" , 'utf-8'))
+    time.sleep(0.05)
 
 def findOrigin(frame):
+    # a verifier
     coordinates = []
     for i in range(frame.shape[0]):
         for j in range(frame.shape[1]):
@@ -27,6 +36,13 @@ def findOrigin(frame):
     return None
 
 
+def click_event_calibration(event, x, y, flags, param):
+    global repere
+    if event == cv2.EVENT_LBUTTONDOWN:
+        repere.append((x, y))
+        print(f"Clique enregistré à : ({x}, {y})")
+
+
 
 # Loading of the model:
 model_path = 'best.pt' #'C:/users/doyez/Downloads/best.pt'  
@@ -40,9 +56,11 @@ if not cap.isOpened():
 
 cv2.namedWindow('Webcam')
 
+cv2.setMouseCallback("Webcam", click_event_calibration)
+
 while True:
     ret, frame = cap.read()
-    findOrigin(frame)
+    #findOrigin(frame)
     if ret:            
         results = model.predict(frame, conf=0.5) 
 
@@ -57,6 +75,14 @@ while True:
                 class_name = "BOX"  
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                 cv2.putText(frame, f'{class_name} {confidence:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+            
+            # Draw the frame:
+            if len(repere) == 3:
+                cv2.circle(frame, (repere[0][0], repere[0][1]), 5, (0, 0, 255), -1)  # Dessiner un cercle rouge
+                cv2.arrowedLine(frame, repere[0], repere[1], (255, 0, 0), 2)
+                cv2.arrowedLine(frame, repere[0], repere[2], (255, 0, 0), 2)
+                cv2.putText(frame, "ORIGIN [0,0]", (repere[0][0] -10 , repere[0][1] -10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                        
             # Show the image
             cv2.imshow('Webcam', frame)
 
