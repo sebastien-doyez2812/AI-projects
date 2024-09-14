@@ -4,10 +4,27 @@ import time
 import numpy as np
 import serial
 
-arduino = serial.Serial(port='COM5', baudrate= 9600, timeout= 1)
-repere = []
+graduation = 29.8
+#arduino = serial.Serial(port='COM5', baudrate= 9600, timeout= 1)
+repere = [] #[[coord_orig], [y], [x]]
+target = []
 
-def sendDate(data):
+def calculAngle(pt):
+    #a definir
+    return   
+
+def calculCoordinates(xr, yr):
+    Xd = graduation *(repere[0][0] - xr)/(repere[0][0] - repere[2][0]) #Xd = 29.8 * (Xr - X0)/ (X1 - X0)
+    Yd = graduation *(repere[0][1] - yr)/(repere[0][1] - repere[1][1]) #Yd = 29.8 * (Yr - Y0)/ (Y1 - Y0)
+    return [Xd, Yd]
+
+def pixelCentral(pt1, pt2):
+    Xc = int(pt1[0] + (pt2[0]- pt1[0])/2) # = X1 + (X2-X1) /2
+    Yc = int(pt1[1] + (pt2[1]- pt1[1])/2) # = Y1 + (Y2-Y1) /2
+    return (Xc, Yc)
+
+
+def sendData(data):
     arduino.write(bytes(f"{data}\n" , 'utf-8'))
     time.sleep(0.05)
 
@@ -40,7 +57,6 @@ def click_event_calibration(event, x, y, flags, param):
     global repere
     if event == cv2.EVENT_LBUTTONDOWN:
         repere.append((x, y))
-        print(f"Clique enregistré à : ({x}, {y})")
 
 
 
@@ -60,10 +76,15 @@ cv2.setMouseCallback("Webcam", click_event_calibration)
 
 while True:
     ret, frame = cap.read()
-    #findOrigin(frame)
-    if ret:            
+    if ret and (len(repere) == 3 ):            
         results = model.predict(frame, conf=0.5) 
-
+        
+        # Draw the frame:
+        cv2.circle(frame, (repere[0][0], repere[0][1]), 5, (0, 0, 255), -1)  # Dessiner un cercle rouge
+        cv2.arrowedLine(frame, repere[0], repere[1], (255, 0, 0), 2)
+        cv2.arrowedLine(frame, repere[0], repere[2], (255, 0, 0), 2)
+        cv2.putText(frame, "ORIGIN [0,0]", (repere[0][0] -10 , repere[0][1] -10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        
         for result in results:
             boxes = result.boxes.xyxy.cpu().numpy()  # Coordinates
             confidences = result.boxes.conf.cpu().numpy()  # %
@@ -75,16 +96,15 @@ while True:
                 class_name = "BOX"  
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                 cv2.putText(frame, f'{class_name} {confidence:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-            
-            # Draw the frame:
-            if len(repere) == 3:
-                cv2.circle(frame, (repere[0][0], repere[0][1]), 5, (0, 0, 255), -1)  # Dessiner un cercle rouge
-                cv2.arrowedLine(frame, repere[0], repere[1], (255, 0, 0), 2)
-                cv2.arrowedLine(frame, repere[0], repere[2], (255, 0, 0), 2)
-                cv2.putText(frame, "ORIGIN [0,0]", (repere[0][0] -10 , repere[0][1] -10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-                        
-            # Show the image
-            cv2.imshow('Webcam', frame)
+                
+                # Calculate the central point:
+                [Xc, Yc]= pixelCentral([x1,y1], [x2,y2])
+                [Xd, Yd] = calculCoordinates(Xc, Yc)
+                cv2.putText(frame, f"({round(Xd, 1)}, {round(Yd, 1)})", (Xc- 30, Yc + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
+
+    # Show the image
+    cv2.imshow('Webcam', frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
