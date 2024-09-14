@@ -5,9 +5,21 @@ import numpy as np
 import serial
 
 graduation = 29.8
-#arduino = serial.Serial(port='COM5', baudrate= 9600, timeout= 1)
+port = 'COM5'
 repere = [] #[[coord_orig], [y], [x]]
 target = []
+
+
+def testRobotConnected(port_robot):
+    try:
+        ser = serial.Serial(port_robot, baudrate=9600, timeout=1)
+        ser.close()
+        print("Robot connected")
+        return True
+    except:
+        print("Error: Robot not connected")
+        return False
+
 
 def calculAngle(pt):
     #a definir
@@ -58,56 +70,59 @@ def click_event_calibration(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         repere.append((x, y))
 
+# Check if the robot is connected:
+robotEnable = testRobotConnected(port)
 
+if robotEnable :
+    arduino = serial.Serial(port='COM5', baudrate= 9600, timeout= 1)
+    # Loading of the model:
+    model_path = 'best.pt' #'C:/users/doyez/Downloads/best.pt'  
+    model = YOLO(model_path)
 
-# Loading of the model:
-model_path = 'best.pt' #'C:/users/doyez/Downloads/best.pt'  
-model = YOLO(model_path)
+    cap = cv2.VideoCapture(0)
 
-cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("Error: Webcam not connect")
+        exit()
 
-if not cap.isOpened():
-    print("Erreur: Impossible d'ouvrir la webcam")
-    exit()
+    cv2.namedWindow('Webcam')
 
-cv2.namedWindow('Webcam')
+    cv2.setMouseCallback("Webcam", click_event_calibration)
 
-cv2.setMouseCallback("Webcam", click_event_calibration)
-
-while True:
-    ret, frame = cap.read()
-    if ret and (len(repere) == 3 ):            
-        results = model.predict(frame, conf=0.5) 
-        
-        # Draw the frame:
-        cv2.circle(frame, (repere[0][0], repere[0][1]), 5, (0, 0, 255), -1)  # Dessiner un cercle rouge
-        cv2.arrowedLine(frame, repere[0], repere[1], (255, 0, 0), 2)
-        cv2.arrowedLine(frame, repere[0], repere[2], (255, 0, 0), 2)
-        cv2.putText(frame, "ORIGIN [0,0]", (repere[0][0] -25 , repere[0][1] + 22), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-        
-        for result in results:
-            boxes = result.boxes.xyxy.cpu().numpy()  # Coordinates
-            confidences = result.boxes.conf.cpu().numpy()  # %
-            class_ids = result.boxes.cls.cpu().numpy()  # ID
+    while True:
+        ret, frame = cap.read()
+        if ret and (len(repere) == 3 ):            
+            results = model.predict(frame, conf=0.5) 
             
-            # Draw the result:
-            for box, confidence, class_id in zip(boxes, confidences, class_ids):
-                x1, y1, x2, y2 = map(int, box)
-                class_name = "BOX"  
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                cv2.putText(frame, f'{class_name} {confidence*100:.2f}{"%"}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+            # Draw the frame:
+            cv2.circle(frame, (repere[0][0], repere[0][1]), 5, (0, 0, 255), -1)  # Dessiner un cercle rouge
+            cv2.arrowedLine(frame, repere[0], repere[1], (255, 0, 0), 2)
+            cv2.arrowedLine(frame, repere[0], repere[2], (255, 0, 0), 2)
+            cv2.putText(frame, "ORIGIN [0,0]", (repere[0][0] -25 , repere[0][1] + 22), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+            
+            for result in results:
+                boxes = result.boxes.xyxy.cpu().numpy()  # Coordinates
+                confidences = result.boxes.conf.cpu().numpy()  # %
+                class_ids = result.boxes.cls.cpu().numpy()  # ID
                 
-                # Calculate the central point:
-                [Xc, Yc]= pixelCentral([x1,y1], [x2,y2])
-                [Xd, Yd] = calculCoordinates(Xc, Yc)
-                cv2.putText(frame, f"({round(Xd, 1)}, {round(Yd, 1)})", (Xc- 30, Yc + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                # Draw the result:
+                for box, confidence, class_id in zip(boxes, confidences, class_ids):
+                    x1, y1, x2, y2 = map(int, box)
+                    class_name = "BOX"  
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                    cv2.putText(frame, f'{class_name} {confidence*100:.2f}{"%"}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                    
+                    # Calculate the central point:
+                    [Xc, Yc]= pixelCentral([x1,y1], [x2,y2])
+                    [Xd, Yd] = calculCoordinates(Xc, Yc)
+                    cv2.putText(frame, f"({round(Xd, 1)}, {round(Yd, 1)})", (Xc- 30, Yc + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
 
-    # Show the image
-    cv2.imshow('Webcam', frame)
+        # Show the image
+        cv2.imshow('Webcam', frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-cap.release()
-cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()
