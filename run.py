@@ -47,7 +47,7 @@ def findOrigin(frame):
         iFound = int((min_i + max_i) / 2)
         jFound = int((min_j + max_j) / 2)
         cv2.circle(frame, (jFound, iFound), 5, (255, 0, 0), -1)
-        cv2.putText(frame, "ORIGIN [0,0]", (jFound -10 , iFound -10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        cv2.putText(frame, "ORIGIN [0,0]", (jFound -50 , iFound +55), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
         return [iFound, jFound]
     
     return None
@@ -83,7 +83,7 @@ while True:
         cv2.circle(frame, (repere[0][0], repere[0][1]), 5, (0, 0, 255), -1)  # Dessiner un cercle rouge
         cv2.arrowedLine(frame, repere[0], repere[1], (255, 0, 0), 2)
         cv2.arrowedLine(frame, repere[0], repere[2], (255, 0, 0), 2)
-        cv2.putText(frame, "ORIGIN [0,0]", (repere[0][0] -10 , repere[0][1] -10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        cv2.putText(frame, "ORIGIN [0,0]", (repere[0][0] -25 , repere[0][1] + 22), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
         
         for result in results:
             boxes = result.boxes.xyxy.cpu().numpy()  # Coordinates
@@ -95,7 +95,7 @@ while True:
                 x1, y1, x2, y2 = map(int, box)
                 class_name = "BOX"  
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                cv2.putText(frame, f'{class_name} {confidence:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                cv2.putText(frame, f'{class_name} {confidence*100:.2f}{"%"}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
                 
                 # Calculate the central point:
                 [Xc, Yc]= pixelCentral([x1,y1], [x2,y2])
