@@ -1,13 +1,45 @@
+# -----------------------------------------------------------
+# Script Name    : run.py
+# Author         : Sébastien Doyez
+# Creation Date  : 15/09/2024
+# Version        : 1.0
+# Description    : Python script containing a Machine Learning model, able
+# to detect a box, calculate coordinates and send it to robot. 
+#
+# Copyright (c) 2024, Sébastien DOYEZ
+# All rights reserved.
+#
+# License:
+# This code is distributed under the MIT license.
+# You are free to use, modify, and distribute it, provided that
+# you keep this copyright notice. The software is provided "as is,"
+# without any warranty of any kind.
+# -----------------------------------------------------------
+
 import cv2
 from ultralytics import YOLO
 import time
 import numpy as np
 import serial
+import math as m
 
 graduation = 29.8
 port = 'COM5'
 repere = [] #[[coord_orig], [y], [x]]
 target = []
+posAxeRobot = [-7, 14.8]
+l1 = 11.5
+l2 = 17.5
+
+
+def MGD(xr, yr):
+    print("xr = ", xr)
+    print("yr = ", yr)
+    print("interieur acos= " , (xr**2 + yr**2 - (l1**2 + l2**2))/(2*l1*l2))
+    theta2 = m.acos((xr**2 + yr**2 - (l1**2 + l2**2))/(2*l1*l2))
+    theta1 = m.asin((yr*(l1+l2*m.cos(theta2)) - xr*l2*m.sin(theta2))/ (xr**2 + yr**2))
+    return(theta1, theta2)
+
 
 
 def testRobotConnected(port_robot):
@@ -22,8 +54,12 @@ def testRobotConnected(port_robot):
 
 
 def calculAngle(pt):
-    #a definir
-    return   
+    # Theta 1:
+    theta1 = m.atan((pt[1]- posAxeRobot[1])/(pt[0]))
+    (theta2, theta3) = MGD(2-10.5, m.sqrt((pt[0] + 7)**2 + (pt[1] - 14.8)**2))
+    
+    # Theta 3:
+    return (theta1, theta2, theta3)
 
 def calculCoordinates(xr, yr):
     Xd = graduation *(repere[0][0] - xr)/(repere[0][0] - repere[2][0]) #Xd = 29.8 * (Xr - X0)/ (X1 - X0)
@@ -36,9 +72,12 @@ def pixelCentral(pt1, pt2):
     return (Xc, Yc)
 
 
-def sendData(data):
-    arduino.write(bytes(f"{data}\n" , 'utf-8'))
-    time.sleep(0.05)
+def sendData(theta1, theta2, theta3):
+    list_data = str([theta1, theta2, theta3])+"\n"
+    arduino.write(list_data.encode())
+    arduino.write(b'\n')
+    print("Donnée envoyé!")
+    time.sleep(10)
 
 def findOrigin(frame):
     # a verifier
@@ -76,7 +115,7 @@ robotEnable = testRobotConnected(port)
 if robotEnable :
     arduino = serial.Serial(port='COM5', baudrate= 9600, timeout= 1)
     # Loading of the model:
-    model_path = 'best.pt' #'C:/users/doyez/Downloads/best.pt'  
+    model_path = 'best.pt' 
     model = YOLO(model_path)
 
     cap = cv2.VideoCapture(0)
@@ -112,11 +151,19 @@ if robotEnable :
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                     cv2.putText(frame, f'{class_name} {confidence*100:.2f}{"%"}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
                     
+
+                    time.sleep(2)
                     # Calculate the central point:
                     [Xc, Yc]= pixelCentral([x1,y1], [x2,y2])
                     [Xd, Yd] = calculCoordinates(Xc, Yc)
                     cv2.putText(frame, f"({round(Xd, 1)}, {round(Yd, 1)})", (Xc- 30, Yc + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
+                    (theta1, theta2, theta3) = calculAngle((Xd,Yd))
+                    theta1 = m.degrees(theta1) + 90
+                    theta2 = m.degrees(theta2) 
+                    theta3 = m.degrees(theta3)
+                    print(theta1, theta2, theta3)
+                    sendData(theta1, theta2, theta3)
 
         # Show the image
         cv2.imshow('Webcam', frame)
