@@ -44,11 +44,11 @@ void slowMoves(Servo servomotor, int angle, int currentPosition){
 }
 
 void openGripper(){
-  gripper.write(90);
+  gripper.write(0);
 }
 
 void closeGripper(){
-  gripper.write(0);
+  gripper.write(90);
 }
 
 void setUpServo()
@@ -60,7 +60,7 @@ void setUpServo()
   theta1.write(0);
   theta2.write(0);
   theta3.write(0);
-  gripper.write(0);
+  gripper.write(90);
 }
 
 void updateAngle(int newPos1, int newPos2, int newPos3){
@@ -69,11 +69,13 @@ void updateAngle(int newPos1, int newPos2, int newPos3){
   actualPosition[2] = newPos3;
 }
 
+
 void setup()
 {
   Serial.begin(9600);
   setUpServo();
 }
+
 
 void loop() {
   if (Serial.available() > 0) {
@@ -111,18 +113,22 @@ void loop() {
       {
         numbers[i] = 0;
       }
-      // position de départ:
-      moveToAngle(0, 0, 45, 0, 20, 0);        
-
+      slowMoves(theta1, o1, 0);
+      delay(500);
+      slowMoves(theta2, o2, 0);
+      delay(1000);
       openGripper();
-      delay(5000);
-      // aller a la position selon theta1
-      moveToAngle(o1, 0, o2, 45, o3, 20);
-      delay(2000);
+      delay(500);
+      slowMoves(theta3, o3, 0);
+      delay(500);
       closeGripper();
-      moveToAngle(o1,o1, 45, o2, 20, o3);
-      delay(4000);
-      moveToAngle(0, o1, 0, 45, 0, 20);
+      delay(500);
+      slowMoves(theta3, 0, o3);
+      delay(500);
+      slowMoves(theta2, 0, o2);
+      delay(1000);
+      slowMoves(theta3, 0, o3);
+      delay(1000);
       openGripper();
     } else {
       Serial.println("Error message");

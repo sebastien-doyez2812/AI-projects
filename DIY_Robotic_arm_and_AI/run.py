@@ -28,16 +28,17 @@ port = 'COM5'
 repere = [] #[[coord_orig], [y], [x]]
 target = []
 posAxeRobot = [-7, 14.8]
+l0 = 15.5
 l1 = 11.5
 l2 = 17.5
-
+correcteur_t1 = 10
 
 def MGD(xr, yr):
     print("xr = ", xr)
     print("yr = ", yr)
     print("interieur acos= " , (xr**2 + yr**2 - (l1**2 + l2**2))/(2*l1*l2))
-    theta2 = m.acos((xr**2 + yr**2 - (l1**2 + l2**2))/(2*l1*l2))
-    theta1 = m.asin((yr*(l1+l2*m.cos(theta2)) - xr*l2*m.sin(theta2))/ (xr**2 + yr**2))
+    theta2 = m.acos((xr*xr + yr*yr - (l1*l1 + l2*l2))/(2*l1*l2))
+    theta1 = m.asin((yr*(l1+l2*m.cos(theta2)) - xr*l2*m.sin(theta2))/ (xr*xr + yr*yr))
     return(theta1, theta2)
 
 
@@ -56,9 +57,9 @@ def testRobotConnected(port_robot):
 def calculAngle(pt):
     # Theta 1:
     theta1 = m.atan((pt[1]- posAxeRobot[1])/(pt[0]))
-    (theta2, theta3) = MGD(2-10.5, m.sqrt((pt[0] + 7)**2 + (pt[1] - 14.8)**2))
+    (theta2, theta3) = MGD(m.sqrt((pt[0] + 7)**2 + (pt[1] - 14.8)**2), -16)#MGD(2-10.5, m.sqrt((pt[0] + 7)**2 + (pt[1] - 14.8)**2))
     
-    # Theta 3:
+    # Theta 3:    
     return (theta1, theta2, theta3)
 
 def calculCoordinates(xr, yr):
@@ -73,6 +74,7 @@ def pixelCentral(pt1, pt2):
 
 
 def sendData(theta1, theta2, theta3):
+    print("angle a envoyé:", theta1, theta2, theta3)
     list_data = str([theta1, theta2, theta3])+"\n"
     arduino.write(list_data.encode())
     arduino.write(b'\n')
@@ -159,11 +161,12 @@ if robotEnable :
                     cv2.putText(frame, f"({round(Xd, 1)}, {round(Yd, 1)})", (Xc- 30, Yc + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
                     (theta1, theta2, theta3) = calculAngle((Xd,Yd))
-                    theta1 = m.degrees(theta1) + 90
+                    theta1 = m.degrees(theta1) + 90 + correcteur_t1
                     theta2 = m.degrees(theta2) 
-                    theta3 = m.degrees(theta3)
+                    theta3 = m.degrees(theta3) +25
                     print(theta1, theta2, theta3)
                     sendData(theta1, theta2, theta3)
+                    break
 
         # Show the image
         cv2.imshow('Webcam', frame)
