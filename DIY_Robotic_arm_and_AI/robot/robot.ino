@@ -10,16 +10,10 @@ Servo gripper;
 #define PIN3 10
 #define PIN4 6
 
+int OK = 1;
+
 int actualPosition[3] = {0,0,0};
 int numbers[3];
-
-void moveToAngle(int angle1, int actualPos1, int angle2, int actualPos2, int angle3, int actualPos3){
-  slowMoves(theta1,angle1, actualPos1);
-  delay(2000);
-  slowMoves(theta2,angle2, actualPos2);
-  delay(250);
-  slowMoves(theta3,angle3, actualPos3);
-}
 
 void slowMoves(Servo servomotor, int angle, int currentPosition){
   if (currentPosition < angle){
@@ -63,76 +57,84 @@ void setUpServo()
   gripper.write(90);
 }
 
-void updateAngle(int newPos1, int newPos2, int newPos3){
-  actualPosition[0] = newPos1;
-  actualPosition[1] = newPos2;
-  actualPosition[2] = newPos3;
-}
-
-
 void setup()
 {
   Serial.begin(9600);
   setUpServo();
 }
 
+void moveToTarget(int o1, int o2, int o3)
+{
+  slowMoves(theta1, o1, 0);
+  delay(500);
+  slowMoves(theta2, o2, 0);
+  delay(1000);
+  openGripper();
+  delay(500);
+  slowMoves(theta3, o3, 0);
+  delay(500);
+  closeGripper();
+  delay(500);
+  slowMoves(theta3, 0, o3);
+  delay(500);
+  slowMoves(theta1, 130, o1);
+  delay(500);
+  slowMoves(theta2, -74, o2);
+  delay(500);
+  slowMoves(theta3, 45, 0);
+  openGripper();
+  delay(1000);
+  slowMoves(theta3, 0, 45);
+  delay(200);
+  closeGripper();
+  delay(200);
+  slowMoves(theta1, 0, 157);
+}
 
 void loop() {
-  if (Serial.available() > 0) {
-    String str_data = Serial.readStringUntil('\n'); 
+  if (OK == 1 )
+  {
+    if (Serial.available() > 0) {
+      String str_data = Serial.readStringUntil('\n'); 
 
-    str_data.trim();
+      str_data.trim();
 
-    int startIndex = str_data.indexOf('[') + 1;
-    int endIndex = str_data.indexOf(']');
+      int startIndex = str_data.indexOf('[') + 1;
+      int endIndex = str_data.indexOf(']');
 
-    if (startIndex > 0 && endIndex > startIndex) {
-      String numbersString = str_data.substring(startIndex, endIndex);
-      
-      int numberCount = 0;
-      int commaIndex = 0;
-      int previousCommaIndex = 0;
+      if (startIndex > 0 && endIndex > startIndex) {
+        String numbersString = str_data.substring(startIndex, endIndex);
+        
+        int numberCount = 0;
+        int commaIndex = 0;
+        int previousCommaIndex = 0;
 
-      while ((commaIndex = numbersString.indexOf(',', previousCommaIndex)) != -1 && numberCount < 3) {
-        String numberString = numbersString.substring(previousCommaIndex, commaIndex);
-        numberString.trim();  
-        numbers[numberCount++] = numberString.toInt();  
-        previousCommaIndex = commaIndex + 1;
+        while ((commaIndex = numbersString.indexOf(',', previousCommaIndex)) != -1 && numberCount < 3) {
+          String numberString = numbersString.substring(previousCommaIndex, commaIndex);
+          numberString.trim();  
+          numbers[numberCount++] = numberString.toInt();  
+          previousCommaIndex = commaIndex + 1;
+        }
+
+        if (previousCommaIndex < numbersString.length() && numberCount < 3) {
+          String numberString = numbersString.substring(previousCommaIndex);
+          numberString.trim();  
+          numbers[numberCount++] = numberString.toInt();
+        }
+
+        int o1 = numbers[0];
+        int o2 = numbers[1];
+        int o3 = numbers[2];
+        for (int i = 0; i < 3; i ++)
+        {
+          numbers[i] = 0;
+        }
+        moveToTarget(o1,o2,o3);
+        OK = 0;
+      } else {
+        Serial.println("Error message");
+        Serial.println(str_data);
       }
-
-      if (previousCommaIndex < numbersString.length() && numberCount < 3) {
-        String numberString = numbersString.substring(previousCommaIndex);
-        numberString.trim();  
-        numbers[numberCount++] = numberString.toInt();
-      }
-
-      int o1 = numbers[0];
-      int o2 = numbers[1];
-      int o3 = numbers[2];
-      for (int i = 0; i < 3; i ++)
-      {
-        numbers[i] = 0;
-      }
-      slowMoves(theta1, o1, 0);
-      delay(500);
-      slowMoves(theta2, o2, 0);
-      delay(1000);
-      openGripper();
-      delay(500);
-      slowMoves(theta3, o3, 0);
-      delay(500);
-      closeGripper();
-      delay(500);
-      slowMoves(theta3, 0, o3);
-      delay(500);
-      slowMoves(theta2, 0, o2);
-      delay(1000);
-      slowMoves(theta3, 0, o3);
-      delay(1000);
-      openGripper();
-    } else {
-      Serial.println("Error message");
-      Serial.println(str_data);
-    }
-  }      
+    }   
+  }
 }
