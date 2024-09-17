@@ -157,38 +157,18 @@ if robotEnable :
                     [Xc, Yc]= pixelCentral([x1,y1], [x2,y2])
                     [Xd, Yd] = calculCoordinates(Xc, Yc)
                     cv2.putText(frame, f"({round(Xd, 1)}, {round(Yd, 1)})", (Xc- 30, Yc + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-                    """
-                    (theta1, theta2, theta3) = calculAngle((Xd,Yd))
-                    theta1 = m.degrees(theta1) + 90 + correcteur_t1
-                    theta2 = m.degrees(theta2) 
-                    theta3 = m.degrees(theta3) +25
-                    print(theta1, theta2, theta3)
-                    sendData(theta1, theta2, theta3)
-                    break
-                    """
+
         # Show the image
         cv2.imshow('Webcam', frame)
         if cv2.waitKey(1) & 0xFF == ord('y'):
             (theta1, theta2, theta3) = calculAngle((Xd,Yd))
-            theta1 = m.degrees(theta1) + 90 + correcteur_t1
-            theta2 = m.degrees(theta2) 
-            theta3 = m.degrees(theta3) +25
+            theta1 = 90 + m.degrees(theta1) + correcteur_t1
+            theta2 = 90 + m.degrees(theta2)
+            theta3 = 90+ m.degrees(theta3) +25
             print(theta1, theta2, theta3)
             sendData(theta1, theta2, theta3)
             break            
-        """ans = input("Detection accurate? (Y/N)")
-        if ans == "N" or ans == "n":
-            break
-
-        else:
-            (theta1, theta2, theta3) = calculAngle((Xd,Yd))
-            theta1 = m.degrees(theta1) + 90 + correcteur_t1
-            theta2 = m.degrees(theta2) 
-            theta3 = m.degrees(theta3) +25
-            print(theta1, theta2, theta3)
-            sendData(theta1, theta2, theta3)
-            break            
-        """
+        
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
