@@ -52,8 +52,8 @@ void setUpServo()
   theta3.attach(PIN3);
   gripper.attach(PIN4);
   theta1.write(0);
-  theta2.write(0);
-  theta3.write(0);
+  theta2.write(90);
+  theta3.write(90);
   gripper.write(90);
 }
 
@@ -67,28 +67,31 @@ void moveToTarget(int o1, int o2, int o3)
 {
   slowMoves(theta1, o1, 0);
   delay(500);
-  slowMoves(theta2, o2, 0);
-  delay(1000);
   openGripper();
   delay(500);
-  slowMoves(theta3, o3, 0);
+  slowMoves(theta3, o3, 90);  
+  delay(500);
+  slowMoves(theta2, o2, 90);
   delay(500);
   closeGripper();
   delay(500);
-  slowMoves(theta3, 0, o3);
+  slowMoves(theta3, 90, o3);
+  delay(500);
+  slowMoves(theta2, 90, o2);
   delay(500);
   slowMoves(theta1, 130, o1);
   delay(500);
-  slowMoves(theta2, -74, o2);
+  slowMoves(theta2, o2, 90);
   delay(500);
-  slowMoves(theta3, 45, 0);
+  slowMoves(theta3, o3, 90);
   openGripper();
   delay(1000);
-  slowMoves(theta3, 0, 45);
+  slowMoves(theta2, 90, o2 );
   delay(200);
+  slowMoves(theta3, 90, o3 );
   closeGripper();
   delay(200);
-  slowMoves(theta1, 0, 157);
+  slowMoves(theta1, 0, 130);
 }
 
 void loop() {

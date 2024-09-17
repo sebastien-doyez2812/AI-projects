@@ -34,10 +34,7 @@ l2 = 17.5
 correcteur_t1 = 15
 
 def MGD(xr, yr):
-    print("xr = ", xr)
-    print("yr = ", yr)
-    print("interieur acos= " , (xr**2 + yr**2 - (l1**2 + l2**2))/(2*l1*l2))
-    theta2 = m.acos((xr*xr + yr*yr - (l1*l1 + l2*l2))/(2*l1*l2))
+    theta2 = -m.acos((xr*xr + yr*yr - (l1*l1 + l2*l2))/(2*l1*l2))
     theta1 = m.asin((yr*(l1+l2*m.cos(theta2)) - xr*l2*m.sin(theta2))/ (xr*xr + yr*yr))
     return(theta1, theta2)
 
@@ -74,11 +71,10 @@ def pixelCentral(pt1, pt2):
 
 
 def sendData(theta1, theta2, theta3):
-    print("angle a envoyé:", theta1, theta2, theta3)
     list_data = str([theta1, theta2, theta3])+"\n"
     arduino.write(list_data.encode())
     arduino.write(b'\n')
-    print("Donnée envoyé!")
+    print("Data sent!")
     time.sleep(10)
 
 def findOrigin(frame):
@@ -163,9 +159,8 @@ if robotEnable :
         if cv2.waitKey(1) & 0xFF == ord('y'):
             (theta1, theta2, theta3) = calculAngle((Xd,Yd))
             theta1 = 90 + m.degrees(theta1) + correcteur_t1
-            theta2 = 90 + m.degrees(theta2)
-            theta3 = 90+ m.degrees(theta3) +25
-            print(theta1, theta2, theta3)
+            theta2 = 90 +  m.degrees(theta2)
+            theta3 = 90 - m.degrees(theta3) 
             sendData(theta1, theta2, theta3)
             break            
         
