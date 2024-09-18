@@ -126,6 +126,8 @@ if robotEnable :
 
     cv2.setMouseCallback("Webcam", click_event_calibration)
 
+    print("Please, calibrate the system...\n1) click on the origin of the frame (red point)\n2) click on the top graduation point\n3)  click on the right bottom graduation")
+    print("\n\nWhen the calibration is done, AI will show where is the box.\nIf you agree, press the 'y' key.")
     while True:
         ret, frame = cap.read()
         if ret and (len(repere) == 3 ):            
@@ -157,6 +159,7 @@ if robotEnable :
         # Show the image
         cv2.imshow('Webcam', frame)
         if cv2.waitKey(1) & 0xFF == ord('y'):
+            print("\n\n\n_________________\n/!\ WARNING /!\ \n_________________ \n\n'y' key pressed! \nSending the data to the robot\n_________________\n")
             (theta1, theta2, theta3) = calculAngle((Xd,Yd))
             theta1 = 90 + m.degrees(theta1) + correcteur_t1
             theta2 = 90 +  m.degrees(theta2)
@@ -169,3 +172,5 @@ if robotEnable :
 
     cap.release()
     cv2.destroyAllWindows()
+
+
