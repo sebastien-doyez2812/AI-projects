@@ -6,7 +6,7 @@ The goal of this project is to create an AI that can detect a cube and command a
 This time, the code is open source! It can serve as a great base for your own project. Feel free to use it, but don't forget to credit me 😜.
 
 ## 📖 Libraries Used 📖
-You can install all the necessary libraries using the provided `requirements.txt` file, or install them one by one:
+You can install all the necessary libraries using the provided `requirements.txt` file (pip install -r requirements.txt) , or install them one by one:
 
 - **pyserial**: `pip install pyserial`
 - **opencv (cv2)**: `pip install opencv-python`
