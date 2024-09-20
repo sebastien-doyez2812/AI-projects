@@ -1,6 +1,6 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import SVC
-
+from flask import Flask, request, jsonify
 questions = [
     "Quel est ton nom ?", "Comment t'appelles-tu ?", "Qui es-tu ?", 
     "Comment est Seb ?", "Décris-moi ton créateur", "Peux-tu décrire Sébastien ?", 
@@ -27,30 +27,26 @@ reponses = [
     "À long terme, Sébastien vise à devenir un expert reconnu dans le domaine de l'IA et de la robotique, en menant des projets innovants et ambitieux."
 ]
 
-# Ajouter un message par défaut pour les questions non reconnues
-def trouver_reponse(question):
-    question_vect = vectorizer.transform([question])
-    try:
-        return model.predict(question_vect)[0]
-    except IndexError:
-        return "Désolé, je ne connais pas la réponse à cette question. Vous pouvez me poser une autre question sur Sébastien."
-
-
-# Transformer les questions en vecteurs numériques avec TF-IDF
 vectorizer = TfidfVectorizer()
 X = vectorizer.fit_transform(questions)
 
-# Modèle de classification (SVM)
 model = SVC(kernel='linear')
 model.fit(X, reponses)
 
+app = Flask(__name__)
 
-# Interaction avec l'utilisateur
-print("Salut! \nJe suis CyberSeb, une AI crée par Sébastien Doyez dans le but de répondre à vos questions ;).\n Allez y posez moi des questions!\n ")
-while True:
-    print("\nUSER: \t")
-    user_input = input()
-    if user_input.lower() == "exit":
-        break
-    print("\nCyberSeb:\t")
-    print(trouver_reponse(user_input))
+@app.route("/get_response",methods = ["POST"])
+def get_response():
+    data = request.json
+    question = data.get("question", "")
+    question_vect = vectorizer.transform([question])
+    try:
+        reponse = model.predict(question_vect)[0]
+    except IndexError:
+        reponse = "Désolé, je ne connais pas la réponse à cette question. Vous pouvez me poser une autre question sur Sébastien."
+    return jsonify({"response": reponse})
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
+    
