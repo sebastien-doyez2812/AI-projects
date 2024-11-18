@@ -50,7 +50,7 @@ labels_map={
     9: 'Ankle Boot',
 }
 # Load the model
-model_path = "C:/Users/doyez/Downloads/model.pth"
+model_path = "model.pth"
 model = LeNet5(num_classes=10) 
 model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
 model.eval() 
